@@ -77,6 +77,36 @@ const operations: operation[] = [
     method: "DELETE",
     fields: { id: "input" },
   },
+  {
+    name: "Create MyLifeList",
+    endpoint: "/api/lists",
+    method: "POST",
+    fields: { name: "input" },
+  },
+  {
+    name: "Add Friend to MyLifeList",
+    endpoint: "/api/lists/assign/:id",
+    method: "PUT",
+    fields: { id: "input", friend: "input" },
+  },
+  {
+    name: "Remove Friend from MyLifeList",
+    endpoint: "/api/lists/remove/:id",
+    method: "PUT",
+    fields: { id: "input", friend: "input" },
+  },
+  {
+    name: "Delete MyLifeList",
+    endpoint: "/api/lists/:id",
+    method: "DELETE",
+    fields: { id: "input" },
+  },
+  {
+    name: "Show MyLifeList",
+    endpoint: "/api/lists/:id",
+    method: "GET",
+    fields: { id: "input" },
+  },
 ];
 
 // Do not edit below here.

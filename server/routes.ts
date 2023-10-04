@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Friend, Post, User, WebSession } from "./app";
+import { Filtering, Friend, Label, Post, User, WebSession } from "./app";
 import { PostDoc, PostOptions } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
@@ -136,6 +136,88 @@ class Routes {
     const fromId = (await User.getUserByUsername(from))._id;
     return await Friend.rejectRequest(fromId, user);
   }
+
+  // ACTIONS
+
+  // @Router.put("users/hometown")
+  // async add_hometown(session: WebSessionDoc, hometown: string) {}
+
+  // @Router.put("users/school")
+  // async add_school(session: WebSessionDoc, school: school) {}
+
+  // @Router.get("/posts/prompt")
+  // async getPostPrompt(session: WebSessionDoc, _id: ObjectIds) {}
+
+  @Router.post("/lists")
+  async createUserLabel(session: WebSessionDoc, name: string) {
+    const user = WebSession.getUser(session);
+    return await Label.createUserLabel(user, name);
+  }
+
+  @Router.put("/lists/assign/:_id")
+  async assignToLabel(session: WebSessionDoc, _id: ObjectId, item: ObjectId) {
+    const user = WebSession.getUser(session);
+    await Label.isAuthor(_id, user);
+    await Label.assignToLabel(_id, item);
+  }
+
+  @Router.put("/lists/remove/:_id")
+  async removeFromLabel(session: WebSessionDoc, _id: ObjectId, item: ObjectId) {
+    const user = WebSession.getUser(session);
+    await Label.isAuthor(_id, user);
+    await Label.removeFromLabel(_id, item);
+  }
+
+  @Router.delete("/lists/:_id")
+  async deleteUserLabel(session: WebSessionDoc, _id: ObjectId) {
+    const user = WebSession.getUser(session);
+    await Label.isAuthor(_id, user);
+    await Label.deleteUserLabel(_id);
+  }
+
+  @Router.get("/lists/:_id")
+  async getUserLabelItems(session: WebSessionDoc, _id: ObjectId) {
+    const user = WebSession.getUser(session);
+    await Label.isAuthor(_id, user);
+    await Label.getUserLabelItems(_id);
+  }
+
+  // @Router.put("/feed/add")
+  // async addToFeed(Session: WebSessionDoc, item: string) {}
+
+  // @Router.put("/feed/remove")
+  // async removeFromFeed(Session: WebSessionDoc, item: string) {}
+
+  // @Router.put("/feed/add/many")
+  // async bulkAdd(Session: WebSessionDoc, itemList: [string]) {}
+
+  // @Router.put("/feed/add/remove")
+  // async bulkRemove(Session: WebSessionDoc, itemList: [string]) {}
+
+  // @Router.delete("/feed/clear")
+  // async clearFeed(Session: WebSessionDoc) {}
+
+  // @Router.put("/feed/suggestions")
+  // async seeNewSuggestions(Session: WebSessionDoc, newClicked: boolean) {}
+
+  @Router.get("/filer/items")
+  async getItemsMatchingFilter(session: WebSessionDoc, labelItems: ObjectId[], outputItems: ObjectId[]) {
+    return Filtering.getItemsMatchingFilter(labelItems, outputItems);
+  }
+
+  // // SYNCHRONIZATIONS
+
+  // @Router.get("/get/posts/label")
+  // async getPostsFromLabel(Session: WebSessionDoc, label: ObjectID) {}
+
+  // @Router.get("/get/users/recommended")
+  // async getRecommendedUsers(Session: WebSessionDoc, user: ObjectID) {}
+
+  // @Router.post("/add/users/recommended")
+  // async addRecommendedUsers(Session: WebSessionDoc) {}
+
+  // @Router.put("/update/users/recommended")
+  // async updateRecommendedUsers(Session: WebSessionDoc) {}
 }
 
 export default getExpressRouter(new Routes());
