@@ -78,22 +78,34 @@ const operations: operation[] = [
     fields: { id: "input" },
   },
   {
+    name: "Send Friend Request",
+    endpoint: "/api/friend/requests/:to",
+    method: "POST",
+    fields: { to: "input" },
+  },
+  {
+    name: "Accept Friend Request",
+    endpoint: "/api/friend/accept/:from",
+    method: "PUT",
+    fields: { from: "input" },
+  },
+  {
     name: "Create MyLifeList",
     endpoint: "/api/lists",
     method: "POST",
     fields: { name: "input" },
   },
   {
-    name: "Add Friend to MyLifeList",
+    name: "Add Friend (item) to MyLifeList",
     endpoint: "/api/lists/assign/:id",
     method: "PUT",
-    fields: { id: "input", friend: "input" },
+    fields: { id: "input", item: "input" },
   },
   {
-    name: "Remove Friend from MyLifeList",
+    name: "Remove Friend (item) from MyLifeList",
     endpoint: "/api/lists/remove/:id",
     method: "PUT",
-    fields: { id: "input", friend: "input" },
+    fields: { id: "input", item: "input" },
   },
   {
     name: "Delete MyLifeList",
@@ -106,6 +118,12 @@ const operations: operation[] = [
     endpoint: "/api/lists/:id",
     method: "GET",
     fields: { id: "input" },
+  },
+  {
+    name: "Get MyLifeLists Created by User",
+    endpoint: "/api/lists/",
+    method: "GET",
+    fields: {},
   },
 ];
 
@@ -132,6 +150,9 @@ async function request(method: HttpMethod, endpoint: string, params?: unknown) {
       credentials: "same-origin",
       body: params ? JSON.stringify(params) : undefined,
     });
+
+    const r = await res;
+    console.log(r);
 
     return {
       $statusCode: (await res).status,

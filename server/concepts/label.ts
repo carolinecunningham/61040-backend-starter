@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb";
+import { Filter, ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
 import { NotAllowedError, NotFoundError } from "./errors";
 
@@ -29,29 +29,31 @@ export default class LabelConcept {
 
   async assignToLabel(_id: ObjectId, item: ObjectId) {
     // referenced https://www.typescriptlang.org/docs/handbook/utility-types.html
-    await this.itemisNotInLabel(_id, item);
     const label = await this.user_labels.readOne({ _id });
+    await this.itemisNotInLabel(_id, item, label);
     if (label !== null) {
       let label_items = label.items;
       if (label_items !== undefined) {
-        label_items.concat(item);
+        label_items.concat([item]);
       } else {
         label_items = [item];
       }
       await this.user_labels.updateOne({ _id }, { items: label_items });
+      return { msg: "Assigned item to list" };
     }
   }
 
   async removeFromLabel(_id: ObjectId, item: ObjectId) {
     // referenced https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/splice
-    await this.itemIsInLabel(_id, item);
     const label = await this.user_labels.readOne({ _id });
+    await this.itemIsInLabel(_id, item, label);
     if (label !== null) {
       const label_items = label.items;
       if (label_items !== undefined) {
         const idx = label_items.indexOf(item);
-        const items = label_items.splice(idx);
-        await this.user_labels.updateOne({ _id }, { items: items });
+        label_items.splice(idx);
+        await this.user_labels.updateOne({ _id }, { items: label_items });
+        return { msg: "Deleted item from list" };
       }
     }
   }
@@ -66,30 +68,40 @@ export default class LabelConcept {
     return { msg: "Label deleted successfully!" };
   }
 
-  async getUserLabelItems(_id: ObjectId) {
+  async getLabelItems(_id: ObjectId) {
     const label = await this.user_labels.readOne({ _id });
     if (label !== null) {
-      const label_items = label.items;
-      if (label_items !== undefined) {
-        return label_items.map((label_item) => label_item.toString());
+      if (label.items !== undefined) {
+        return label?.items;
       }
+      return { msg: "Label is empty" };
     }
   }
 
-  async getAppLabelItems(_id: ObjectId) {
-    const label = await this.app_labels.readOne({ _id });
-    if (label !== null) {
-      const label_items = label.items;
-      if (label_items !== undefined) {
-        return label_items.map((label_item) => label_item.toString());
-      }
-    }
+  async getUserLabels(query: Filter<UserLabelDoc>) {
+    const posts = await this.user_labels.readMany(query, {
+      sort: { dateUpdated: -1 },
+    });
+    return posts;
   }
 
-  private async itemIsInLabel(_id: ObjectId, item: ObjectId) {
-    const label = await this.user_labels.readOne({ _id });
+  async getLabelsByAuthor(author: ObjectId) {
+    return await this.getUserLabels({ author });
+  }
+
+  // async getAppLabelItems(_id: ObjectId) {
+  //   const label = await this.app_labels.readOne({ _id });
+  //   if (label !== null) {
+  //     const label_items = label.items;
+  //     if (label_items !== undefined) {
+  //       return label_items.map((label_item) => label_item.toString());
+  //     }
+  //   }
+  // }
+
+  private async itemIsInLabel(_id: ObjectId, item: ObjectId, label: UserLabelDoc | null) {
     if (!label) {
-      throw new NotFoundError(`Label ${_id} does not exist!`);
+      throw new LabelNotFound(_id);
     }
     if (label.items === undefined) {
       throw new NotAllowedError("Cannot delete from empty label");
@@ -101,23 +113,19 @@ export default class LabelConcept {
   async isAuthor(_id: ObjectId, user: ObjectId) {
     const label = await this.user_labels.readOne({ _id });
     if (!label) {
-      throw new NotFoundError(`Label ${_id} does not exist!`);
+      throw new LabelNotFound(_id);
     }
     if (label.author.toString() !== user.toString()) {
       throw new LabelAuthorNotMatchError(_id, user);
     }
   }
 
-  private async itemisNotInLabel(_id: ObjectId, item: ObjectId) {
-    const label = await this.user_labels.readOne({ _id });
+  private async itemisNotInLabel(_id: ObjectId, item: ObjectId, label: UserLabelDoc | null) {
     if (!label) {
-      console.log(this.user_labels);
-      throw new NotFoundError(`Label ${_id} does not exist!`);
+      throw new LabelNotFound(_id);
     }
-    if (label.items === undefined) {
-      throw new NotAllowedError("Cannot add to an empty label");
-    } else if (label.items.indexOf(item) !== -1) {
-      throw new NotAllowedError(`Cannot add item that already exists to label!`);
+    if (label.items !== undefined && label.items.indexOf(item) !== -1) {
+      throw new NotAllowedError(`Item has been already added to label!`);
     }
   }
 }
@@ -128,5 +136,11 @@ export class LabelAuthorNotMatchError extends NotAllowedError {
     public readonly author: ObjectId,
   ) {
     super("{0} is not the author of post {1}!", author, _id);
+  }
+}
+
+export class LabelNotFound extends NotFoundError {
+  constructor(public readonly _id: ObjectId) {
+    super("Post ${_id} does not exist!", _id);
   }
 }

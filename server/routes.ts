@@ -148,6 +148,14 @@ class Routes {
   // @Router.get("/posts/prompt")
   // async getPostPrompt(session: WebSessionDoc, _id: ObjectIds) {}
 
+  // LABEL ROUTES
+
+  @Router.get("/lists/")
+  async getUserLabels(session: WebSessionDoc) {
+    const user = WebSession.getUser(session);
+    return await Label.getLabelsByAuthor(user);
+  }
+
   @Router.post("/lists")
   async createUserLabel(session: WebSessionDoc, name: string) {
     const user = WebSession.getUser(session);
@@ -157,29 +165,31 @@ class Routes {
   @Router.put("/lists/assign/:_id")
   async assignToLabel(session: WebSessionDoc, _id: ObjectId, item: ObjectId) {
     const user = WebSession.getUser(session);
+    const friendUserID = (await User.getUserById(item))._id;
     await Label.isAuthor(_id, user);
-    await Label.assignToLabel(_id, item);
+    await Friend.areUsersFriends(friendUserID, user);
+    return await Label.assignToLabel(_id, item);
   }
 
   @Router.put("/lists/remove/:_id")
   async removeFromLabel(session: WebSessionDoc, _id: ObjectId, item: ObjectId) {
     const user = WebSession.getUser(session);
     await Label.isAuthor(_id, user);
-    await Label.removeFromLabel(_id, item);
+    return await Label.removeFromLabel(_id, item);
   }
 
   @Router.delete("/lists/:_id")
   async deleteUserLabel(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Label.isAuthor(_id, user);
-    await Label.deleteUserLabel(_id);
+    return await Label.deleteUserLabel(_id);
   }
 
   @Router.get("/lists/:_id")
   async getUserLabelItems(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Label.isAuthor(_id, user);
-    await Label.getUserLabelItems(_id);
+    return await Label.getLabelItems(_id);
   }
 
   // @Router.put("/feed/add")
