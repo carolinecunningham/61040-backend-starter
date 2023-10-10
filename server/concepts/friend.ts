@@ -24,8 +24,6 @@ export default class FriendConcept {
   }
 
   async sendRequest(from: ObjectId, to: ObjectId) {
-    console.log(from);
-    console.log(to);
     await this.canSendRequest(from, to);
     await this.requests.createOne({ from, to, status: "pending" });
     return { msg: "Sent request!" };
@@ -78,8 +76,6 @@ export default class FriendConcept {
         { user1: u2, user2: u1 },
       ],
     });
-    console.log(u1);
-    console.log(u2);
     if (!(friendship !== null || u1.toString() === u2.toString())) {
       throw new UsersNotFriendsError(u1, u2);
     }

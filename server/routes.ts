@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Filtering, Friend, Label, Post, User, WebSession } from "./app";
+import { Feed, Filtering, Friend, Label, Post, User, WebSession } from "./app";
 import { PostDoc, PostOptions } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
@@ -28,7 +28,12 @@ class Routes {
   @Router.post("/users")
   async createUser(session: WebSessionDoc, username: string, password: string) {
     WebSession.isLoggedOut(session);
-    return await User.create(username, password);
+    const user = (await User.create(username, password)).user;
+    if (user !== null) {
+      const userId = (await User.getUserById(user._id))._id;
+      await Feed.createFeed(userId);
+    }
+    return user;
   }
 
   @Router.patch("/users")
@@ -192,24 +197,44 @@ class Routes {
     return await Label.getLabelItems(_id);
   }
 
+  // FEED Routes
+
+  @Router.get("/feed/")
+  async generateFeed(session: WebSessionDoc, label?: ObjectId) {
+    // referenced https://stackoverflow.com/questions/40140149/use-async-await-with-array-map
+    const user = WebSession.getUser(session);
+    await Feed.clearFeed(user);
+
+    let labelItems: ObjectId[] = [];
+    if (label) {
+      await Label.isAuthor(label, user);
+      labelItems = await Label.getLabelItems(label);
+      console.log("LABEL");
+      console.log(labelItems);
+      console.log(label);
+      labelItems = await Promise.all(labelItems.map(async (obj_id) => (await User.getUserById(obj_id))._id));
+    }
+
+    const filterIter = label ? labelItems : await Friend.getFriends(user);
+    console.log("FILTER");
+    console.log(filterIter);
+
+    for (const f of filterIter) {
+      // add post IDs to Feed
+      const posts = await Post.getByAuthor(f);
+      console.log("POSTS");
+      console.log(posts);
+      const postsIds = posts.map((post) => post._id);
+      await Feed.bulkAddToFeed(user, postsIds);
+    }
+    return { msg: "Feed Updated", posts: await Feed.getFeedItems(user) };
+  }
+
   // @Router.put("/feed/add")
   // async addToFeed(Session: WebSessionDoc, item: string) {}
 
-  // @Router.put("/feed/remove")
-  // async removeFromFeed(Session: WebSessionDoc, item: string) {}
-
-  // @Router.put("/feed/add/many")
-  // async bulkAdd(Session: WebSessionDoc, itemList: [string]) {}
-
-  // @Router.put("/feed/add/remove")
-  // async bulkRemove(Session: WebSessionDoc, itemList: [string]) {}
-
-  // @Router.delete("/feed/clear")
-  // async clearFeed(Session: WebSessionDoc) {}
-
   // @Router.put("/feed/suggestions")
   // async seeNewSuggestions(Session: WebSessionDoc, newClicked: boolean) {}
-
   @Router.get("/filer/items")
   async getItemsMatchingFilter(session: WebSessionDoc, labelItems: ObjectId[], outputItems: ObjectId[]) {
     return Filtering.getItemsMatchingFilter(labelItems, outputItems);

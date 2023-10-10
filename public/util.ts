@@ -125,6 +125,12 @@ const operations: operation[] = [
     method: "GET",
     fields: {},
   },
+  {
+    name: "Get Feed",
+    endpoint: "/api/feed/",
+    method: "GET",
+    fields: { label: "input" },
+  },
 ];
 
 // Do not edit below here.

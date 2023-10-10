@@ -34,10 +34,11 @@ export default class LabelConcept {
     if (label !== null) {
       let label_items = label.items;
       if (label_items !== undefined) {
-        label_items.concat([item]);
+        label_items = label_items.concat([item]);
       } else {
         label_items = [item];
       }
+      console.log(label_items);
       await this.user_labels.updateOne({ _id }, { items: label_items });
       return { msg: "Assigned item to list" };
     }
@@ -74,8 +75,9 @@ export default class LabelConcept {
       if (label.items !== undefined) {
         return label?.items;
       }
-      return { msg: "Label is empty" };
+      return [];
     }
+    throw new LabelNotFound(_id);
   }
 
   async getUserLabels(query: Filter<UserLabelDoc>) {

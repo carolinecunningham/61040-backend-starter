@@ -1,3 +1,4 @@
+import FeedConcept from "./concepts/feed";
 import FilteringConcept from "./concepts/filtering";
 import FriendConcept from "./concepts/friend";
 import LabelConcept from "./concepts/label";
@@ -12,3 +13,4 @@ export const Post = new PostConcept();
 export const Friend = new FriendConcept();
 export const Filtering = new FilteringConcept();
 export const Label = new LabelConcept();
+export const Feed = new FeedConcept();
