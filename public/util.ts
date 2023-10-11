@@ -63,13 +63,13 @@ const operations: operation[] = [
     name: "Create Post",
     endpoint: "/api/posts",
     method: "POST",
-    fields: { content: "input", prompt: "input" },
+    fields: { content: "input", audienceLabel: "input", prompt: "input" },
   },
   {
     name: "Update Post",
     endpoint: "/api/posts/:id",
     method: "PATCH",
-    fields: { id: "input", update: { content: "input", prompt: "input", options: { backgroundColor: "input" } } },
+    fields: { id: "input", update: { content: "input", audience: "input", prompt: "input", options: { backgroundColor: "input" } } },
   },
   {
     name: "Get Post Prompt",

@@ -143,6 +143,6 @@ export class LabelAuthorNotMatchError extends NotAllowedError {
 
 export class LabelNotFound extends NotFoundError {
   constructor(public readonly _id: ObjectId) {
-    super("Post ${_id} does not exist!", _id);
+    super("Label {0} does not exist!", _id);
   }
 }

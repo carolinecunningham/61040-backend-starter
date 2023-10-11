@@ -77,10 +77,14 @@ class Routes {
   }
 
   @Router.post("/posts")
-  async createPost(session: WebSessionDoc, content: string, prompt: number, options?: PostOptions) {
+  async createPost(session: WebSessionDoc, content: string, prompt: number, audienceLabel?: ObjectId, options?: PostOptions) {
     const user = WebSession.getUser(session);
     await Post.isPromptSuppported(prompt);
-    const created = await Post.create(user, content, prompt, options);
+    if (audienceLabel) {
+      await Label.isAuthor(audienceLabel, user);
+    }
+    console.log(audienceLabel);
+    const created = await Post.create(user, content, prompt, audienceLabel, options);
     return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
@@ -88,6 +92,9 @@ class Routes {
   async updatePost(session: WebSessionDoc, _id: ObjectId, update: Partial<PostDoc>) {
     const user = WebSession.getUser(session);
     await Post.isAuthor(user, _id);
+    if (update.audience) {
+      await Label.isAuthor(update.audience, user);
+    }
     return await Post.update(_id, update);
   }
 
@@ -218,25 +225,32 @@ class Routes {
 
     let labelItems: ObjectId[] = [];
     if (label) {
+      // filter posts by authors only in label
       await Label.isAuthor(label, user);
       labelItems = await Label.getLabelItems(label);
-      console.log("LABEL");
-      console.log(labelItems);
-      console.log(label);
-      labelItems = await Promise.all(labelItems.map(async (obj_id) => (await User.getUserById(obj_id))._id));
+      labelItems = await Promise.all(labelItems.map(async (user_id) => (await User.getUserById(user_id))._id));
     }
 
     const filterIter = label ? labelItems : await Friend.getFriends(user);
-    console.log("FILTER");
-    console.log(filterIter);
 
     for (const f of filterIter) {
       // add post IDs to Feed
       const posts = await Post.getByAuthor(f);
-      console.log("POSTS");
-      console.log(posts);
-      const postsIds = posts.map((post) => post._id);
-      await Feed.bulkAddToFeed(user, postsIds);
+      for (const post of posts) {
+        if (post.audience) {
+          // get label items in audience
+          const labelItems = await Label.getLabelItems(post.audience);
+          const labelItemsStr = labelItems.map((user_id) => user_id.toString());
+          if (labelItemsStr.indexOf(user.toString()) !== -1) {
+            // user in specified audience to see post
+            await Feed.addToFeed(user, post._id);
+          }
+        } else {
+          await Feed.addToFeed(user, post._id);
+        }
+      }
+      // const postsIds = posts.map((post) => post._id);
+      // await Feed.bulkAddToFeed(user, postsIds);
     }
     return { msg: "Feed Updated", posts: await Feed.getFeedItems(user) };
   }
