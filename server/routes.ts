@@ -62,6 +62,8 @@ class Routes {
     return { msg: "Logged out!" };
   }
 
+  // POST ROUTES
+
   @Router.get("/posts")
   async getPosts(author?: string) {
     let posts;
@@ -75,9 +77,10 @@ class Routes {
   }
 
   @Router.post("/posts")
-  async createPost(session: WebSessionDoc, content: string, options?: PostOptions) {
+  async createPost(session: WebSessionDoc, content: string, prompt: number, options?: PostOptions) {
     const user = WebSession.getUser(session);
-    const created = await Post.create(user, content, options);
+    await Post.isPromptSuppported(prompt);
+    const created = await Post.create(user, content, prompt, options);
     return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
@@ -95,6 +98,14 @@ class Routes {
     return Post.delete(_id);
   }
 
+  @Router.get("/posts/prompt/:_id")
+  async getPostPrompt(session: WebSessionDoc, _id: ObjectId) {
+    const user = WebSession.getUser(session);
+    const username = (await User.getUserById(user)).username;
+    return await Post.getPostPrompt(username, _id);
+  }
+
+  // FRIEND ROUTES
   @Router.get("/friends")
   async getFriends(session: WebSessionDoc) {
     const user = WebSession.getUser(session);
