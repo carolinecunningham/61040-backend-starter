@@ -233,10 +233,18 @@ class Routes {
 
     const filterIter = label ? labelItems : await Friend.getFriends(user);
 
-    for (const f of filterIter) {
+    for (const filterUser of filterIter) {
       // add post IDs to Feed
-      const posts = await Post.getByAuthor(f);
-      for (const post of posts) {
+      const posts = await Post.getByAuthor(filterUser);
+
+      // referenced https://web.mit.edu/6.102/www/sp23/classes/13-functional/
+      const postsWithAudience = posts.filter((post) => post.audience !== undefined);
+      const postsWithoutAudience = posts.filter((post) => post.audience === undefined);
+      const postsIds = postsWithoutAudience.map((post) => post._id);
+      await Feed.bulkAddToFeed(user, postsIds);
+
+      for (const post of postsWithAudience) {
+        // console.log("REACHED");
         if (post.audience) {
           // get label items in audience
           const labelItems = await Label.getLabelItems(post.audience);
@@ -249,8 +257,6 @@ class Routes {
           await Feed.addToFeed(user, post._id);
         }
       }
-      // const postsIds = posts.map((post) => post._id);
-      // await Feed.bulkAddToFeed(user, postsIds);
     }
     return { msg: "Feed Updated", posts: await Feed.getFeedItems(user) };
   }
