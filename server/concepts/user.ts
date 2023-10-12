@@ -5,14 +5,16 @@ import { BadValuesError, NotAllowedError, NotFoundError } from "./errors";
 export interface UserDoc extends BaseDoc {
   username: string;
   password: string;
+  school: string;
+  hometown: string;
 }
 
 export default class UserConcept {
   public readonly users = new DocCollection<UserDoc>("users");
 
-  async create(username: string, password: string) {
-    await this.canCreate(username, password);
-    const _id = await this.users.createOne({ username, password });
+  async create(username: string, password: string, school: string, hometown: string) {
+    await this.canCreate(username, password, school, hometown);
+    const _id = await this.users.createOne({ username, password, school, hometown });
     return { msg: "User created successfully!", user: await this.users.readOne({ _id }) };
   }
 
@@ -62,11 +64,22 @@ export default class UserConcept {
   }
 
   async update(_id: ObjectId, update: Partial<UserDoc>) {
+    this.sanitizeUpdate(update);
     if (update.username !== undefined) {
       await this.isUsernameUnique(update.username);
     }
     await this.users.updateOne({ _id }, update);
     return { msg: "User updated successfully!" };
+  }
+
+  private sanitizeUpdate(update: Partial<UserDoc>) {
+    // Make sure the update cannot change the hometown.
+    const allowedUpdates = ["username", "password", "school"];
+    for (const key in update) {
+      if (!allowedUpdates.includes(key)) {
+        throw new NotAllowedError(`Cannot update '${key}' field!`);
+      }
+    }
   }
 
   async delete(_id: ObjectId) {
@@ -81,9 +94,9 @@ export default class UserConcept {
     }
   }
 
-  private async canCreate(username: string, password: string) {
-    if (!username || !password) {
-      throw new BadValuesError("Username and password must be non-empty!");
+  private async canCreate(username: string, password: string, school: string, hometown: string) {
+    if (!username || !password || !school || !hometown) {
+      throw new BadValuesError("Username, password, school, and hometown must be non-empty!");
     }
     await this.isUsernameUnique(username);
   }

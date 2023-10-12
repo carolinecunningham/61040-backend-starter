@@ -10,7 +10,7 @@ export interface PostOptions {
 export interface PostDoc extends BaseDoc {
   author: ObjectId;
   content: string;
-  prompt: number;
+  prompt: PostPrompts;
   audience?: ObjectId;
   options?: PostOptions;
 }

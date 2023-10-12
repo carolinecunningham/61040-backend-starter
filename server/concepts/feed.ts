@@ -26,8 +26,6 @@ export default class FeedConcept {
   }
 
   async bulkAddToFeed(owner: ObjectId, newItems: ObjectId[]) {
-    console.log(owner);
-    console.log(await this.feed.readOne({ owner }));
     const feed = await this.feed.readOne({ owner });
     if (!feed) {
       throw new NotFoundError("User does not have a feed.");

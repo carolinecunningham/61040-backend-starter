@@ -21,7 +21,7 @@ const operations: operation[] = [
     name: "Create User",
     endpoint: "/api/users",
     method: "POST",
-    fields: { username: "input", password: "input" },
+    fields: { username: "input", password: "input", school: "input", hometown: "input" },
   },
   {
     name: "Login",
@@ -39,7 +39,7 @@ const operations: operation[] = [
     name: "Update User",
     endpoint: "/api/users",
     method: "PATCH",
-    fields: { update: { username: "input", password: "input" } },
+    fields: { update: { username: "input", password: "input", school: "input", hometown: "input" } },
   },
   {
     name: "Delete User",
@@ -136,6 +136,18 @@ const operations: operation[] = [
     endpoint: "/api/feed/",
     method: "GET",
     fields: { label: "input" },
+  },
+  {
+    name: "Get Recommended Users",
+    endpoint: "/api/filter/recommendedUsers/",
+    method: "GET",
+    fields: { maxQuantity: "input" },
+  },
+  {
+    name: "See More User Suggestions",
+    endpoint: "/api/filter/recommendedUsers/",
+    method: "PUT",
+    fields: { maxQuantity: "input" },
   },
 ];
 

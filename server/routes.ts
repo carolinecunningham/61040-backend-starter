@@ -26,12 +26,15 @@ class Routes {
   }
 
   @Router.post("/users")
-  async createUser(session: WebSessionDoc, username: string, password: string) {
+  async createUser(session: WebSessionDoc, username: string, password: string, school: string, hometown: string) {
     WebSession.isLoggedOut(session);
-    const user = (await User.create(username, password)).user;
+    const user = (await User.create(username, password, school, hometown)).user;
     if (user !== null) {
       const userId = (await User.getUserById(user._id))._id;
       await Feed.createFeed(userId);
+      // add users to internal lists for school and hometown
+      await Filtering.assignToFilter(school, userId);
+      await Filtering.assignToFilter(hometown, userId);
     }
     return user;
   }
@@ -172,17 +175,18 @@ class Routes {
   // async getPostPrompt(session: WebSessionDoc, _id: ObjectIds) {}
 
   // LABEL ROUTES
+  // Routes are called "lists" because known to users' as MyLifeLists
 
   @Router.get("/lists/")
-  async getUserLabels(session: WebSessionDoc) {
+  async getLabels(session: WebSessionDoc) {
     const user = WebSession.getUser(session);
     return await Label.getLabelsByAuthor(user);
   }
 
   @Router.post("/lists")
-  async createUserLabel(session: WebSessionDoc, name: string) {
+  async createLabel(session: WebSessionDoc, name: string) {
     const user = WebSession.getUser(session);
-    return await Label.createUserLabel(user, name);
+    return await Label.createLabel(user, name);
   }
 
   @Router.put("/lists/assign/:_id")
@@ -202,14 +206,14 @@ class Routes {
   }
 
   @Router.delete("/lists/:_id")
-  async deleteUserLabel(session: WebSessionDoc, _id: ObjectId) {
+  async deleteLabel(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Label.isAuthor(_id, user);
-    return await Label.deleteUserLabel(_id);
+    return await Label.deleteLabel(_id);
   }
 
   @Router.get("/lists/:_id")
-  async getUserLabelItems(session: WebSessionDoc, _id: ObjectId) {
+  async getLabelItems(session: WebSessionDoc, _id: ObjectId) {
     const user = WebSession.getUser(session);
     await Label.isAuthor(_id, user);
     return await Label.getLabelItems(_id);
@@ -261,29 +265,35 @@ class Routes {
     return { msg: "Feed Updated", posts: await Feed.getFeedItems(user) };
   }
 
-  // @Router.put("/feed/add")
-  // async addToFeed(Session: WebSessionDoc, item: string) {}
+  // FILTER ROUTES
 
-  // @Router.put("/feed/suggestions")
-  // async seeNewSuggestions(Session: WebSessionDoc, newClicked: boolean) {}
-  @Router.get("/filer/items")
-  async getItemsMatchingFilter(session: WebSessionDoc, labelItems: ObjectId[], outputItems: ObjectId[]) {
-    return Filtering.getItemsMatchingFilter(labelItems, outputItems);
+  @Router.get("/filter/recommendedUsers/")
+  async getRecommendedUsers(session: WebSessionDoc, maxQuantity: number) {
+    const userID = WebSession.getUser(session);
+    const user = await User.getUserById(userID);
+
+    // referenced https://www.geeksforgeeks.org/how-to-get-the-union-of-two-sets-in-javascript/
+
+    let usersShareSchool = await Filtering.getFilterItems(user.school);
+    let usersShareHometown = await Filtering.getFilterItems(user.hometown);
+
+    // remove original user and friends from potential recommendees
+
+    const friends = await Friend.getFriends(userID);
+    usersShareSchool = Filtering.removeItemsFromFilter(usersShareSchool, friends.concat([userID]));
+    usersShareHometown = Filtering.removeItemsFromFilter(usersShareHometown, friends.concat([userID]));
+
+    // combine recommended users, prioritize by both school and hometown
+
+    return await Filtering.getRecommendedItems(userID, usersShareSchool, usersShareHometown, maxQuantity);
   }
 
-  // // SYNCHRONIZATIONS
+  @Router.put("/filter/recommendedUsers/")
+  async seeMoreSuggestions(session: WebSessionDoc, maxQuantity: number) {
+    const userID = WebSession.getUser(session);
 
-  // @Router.get("/get/posts/label")
-  // async getPostsFromLabel(Session: WebSessionDoc, label: ObjectID) {}
-
-  // @Router.get("/get/users/recommended")
-  // async getRecommendedUsers(Session: WebSessionDoc, user: ObjectID) {}
-
-  // @Router.post("/add/users/recommended")
-  // async addRecommendedUsers(Session: WebSessionDoc) {}
-
-  // @Router.put("/update/users/recommended")
-  // async updateRecommendedUsers(Session: WebSessionDoc) {}
+    return await Filtering.getMoreRecommendations(userID, maxQuantity);
+  }
 }
 
 export default getExpressRouter(new Routes());
