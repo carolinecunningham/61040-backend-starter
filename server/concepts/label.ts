@@ -8,11 +8,6 @@ export interface LabelDoc extends BaseDoc {
   items?: ObjectId[];
 }
 
-// export interface AppLabelDoc extends BaseDoc {
-//   identifier: String;
-//   items?: ObjectId[];
-// }
-
 export default class LabelConcept {
   // public readonly app_labels = new DocCollection<AppLabelDoc>("app_labels");
   public readonly labels = new DocCollection<LabelDoc>("labels");

@@ -163,17 +163,6 @@ class Routes {
     return await Friend.rejectRequest(fromId, user);
   }
 
-  // ACTIONS
-
-  // @Router.put("users/hometown")
-  // async add_hometown(session: WebSessionDoc, hometown: string) {}
-
-  // @Router.put("users/school")
-  // async add_school(session: WebSessionDoc, school: school) {}
-
-  // @Router.get("/posts/prompt")
-  // async getPostPrompt(session: WebSessionDoc, _id: ObjectIds) {}
-
   // LABEL ROUTES
   // Routes are called "lists" because known to users' as MyLifeLists
 
